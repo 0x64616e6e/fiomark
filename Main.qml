@@ -21,6 +21,7 @@ ApplicationWindow {
     }
 
     FioRunner { id: runner }
+    SmartInfo { id: smart; targetDir: runner.targetDir; Component.onCompleted: refresh() }
 
     // fiomark [--dir PATH] [--size GiB] [--runtime S] [--start]
     Component.onCompleted: {
@@ -30,6 +31,7 @@ ApplicationWindow {
         if (opt("--size")) { runner.sizeGiB = parseInt(opt("--size")); sizeBox.currentIndex = sizeBox.indexOfValue(runner.sizeGiB) }
         if (opt("--runtime")) runner.runtimeSec = parseInt(opt("--runtime"))
         if (a.indexOf("--start") >= 0) runner.start()
+        if (a.indexOf("--health") >= 0) tabs.currentIndex = 1
     }
 
     FolderDialog {
@@ -52,6 +54,22 @@ ApplicationWindow {
         spacing: 12
 
         Label { text: runner.deviceInfo; font.family: win.mono; elide: Text.ElideRight; Layout.fillWidth: true }
+
+        TabBar {
+            id: tabs
+            Layout.fillWidth: true
+            TabButton { text: "Benchmark" }
+            TabButton { text: "Health" + (smart.health === "Bad" ? "  ⚠" : "") }
+        }
+
+        StackLayout {
+            Layout.fillWidth: true
+            Layout.fillHeight: true
+            currentIndex: tabs.currentIndex
+
+            // ---------------- Benchmark ----------------
+            ColumnLayout {
+                spacing: 12
         Label {
             visible: runner.warning.length > 0
             text: "⚠ " + runner.warning
@@ -134,6 +152,83 @@ ApplicationWindow {
                 Layout.preferredWidth: 240
                 elide: Text.ElideRight
             }
+        }
+            } // Benchmark
+
+            // ---------------- Health (SMART via udisks2) ----------------
+            ColumnLayout {
+                spacing: 10
+
+                RowLayout {
+                    Layout.fillWidth: true
+                    spacing: 12
+                    ColumnLayout {
+                        spacing: 2
+                        Layout.fillWidth: true
+                        Label {
+                            text: smart.error.length > 0 ? "SMART unavailable" : (smart.drive.model || "")
+                            font.bold: true; font.pixelSize: 18; elide: Text.ElideRight; Layout.fillWidth: true
+                        }
+                        Label {
+                            text: smart.error.length > 0 ? smart.error
+                                : [smart.drive.device, smart.drive.kind, smart.drive.size, "fw " + smart.drive.firmware, "S/N " + smart.drive.serial].join("  ·  ")
+                            font.family: win.mono; opacity: 0.8; elide: Text.ElideRight; Layout.fillWidth: true
+                        }
+                    }
+                    Button { text: smart.busy ? "Reading…" : "Refresh"; enabled: !smart.busy; onClicked: smart.refresh() }
+                }
+
+                Rectangle {
+                    Layout.fillWidth: true
+                    implicitHeight: healthRow.implicitHeight + 20
+                    radius: 6
+                    color: palette.base
+                    border.color: smart.health === "Bad" || smart.health === "Caution" ? palette.highlight : palette.mid
+                    border.width: smart.health === "Good" ? 1 : 2
+                    RowLayout {
+                        id: healthRow
+                        anchors { left: parent.left; right: parent.right; verticalCenter: parent.verticalCenter; margins: 12 }
+                        spacing: 12
+                        Label {
+                            text: smart.health
+                            font.family: win.mono; font.pixelSize: 26; font.bold: true
+                            color: smart.health === "Good" ? palette.text : palette.highlight
+                        }
+                        Label { text: smart.summary; wrapMode: Text.WordWrap; Layout.fillWidth: true }
+                        Label { text: smart.updated.length ? "as of " + smart.updated : ""; font.family: win.mono; opacity: 0.7 }
+                    }
+                }
+
+                ListView {
+                    id: attrList
+                    Layout.fillWidth: true
+                    Layout.fillHeight: true
+                    clip: true
+                    model: smart.attributes
+                    spacing: 2
+                    ScrollBar.vertical: ScrollBar {}
+                    delegate: Rectangle {
+                        required property var modelData
+                        required property int index
+                        width: attrList.width
+                        height: 30
+                        radius: 4
+                        color: index % 2 ? palette.base : "transparent"
+                        RowLayout {
+                            anchors { fill: parent; leftMargin: 10; rightMargin: 10 }
+                            spacing: 10
+                            Label {
+                                text: modelData.level === "crit" ? "●" : modelData.level === "warn" ? "●" : modelData.level === "ok" ? "●" : "○"
+                                color: modelData.level === "crit" || modelData.level === "warn" ? palette.highlight : palette.text
+                                opacity: modelData.level === "info" ? 0.4 : 1
+                                Layout.preferredWidth: 14
+                            }
+                            Label { text: modelData.name; Layout.preferredWidth: 300; elide: Text.ElideRight }
+                            Label { text: modelData.value; font.family: win.mono; Layout.fillWidth: true; elide: Text.ElideRight }
+                        }
+                    }
+                }
+            } // Health
         }
     }
 

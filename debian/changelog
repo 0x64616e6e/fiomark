@@ -1,3 +1,12 @@
+fiomark (0.2.0-1) unstable; urgency=medium
+
+  * Health tab: drive identity and SMART attributes (NVMe and ATA) read through
+    udisks2 over D-Bus, with a Refresh button; overall Good/Caution/Bad rating.
+  * --smart prints the same report in the terminal; --health opens on the tab.
+  * Depends on udisks2.
+
+ -- 0x64616e6e <daniel@este.systems>  Fri, 18 Sep 2026 03:40:39 +0400
+
 fiomark (0.1.0-1) unstable; urgency=medium
 
   * Initial release.

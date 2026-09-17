@@ -6,6 +6,7 @@
 #include <QTextStream>
 
 #include "fiorunner.h"
+#include "smartinfo.h"
 
 static int runCli(int argc, char **argv)
 {
@@ -13,11 +14,19 @@ static int runCli(int argc, char **argv)
     QCommandLineParser p;
     p.addHelpOption();
     p.addOption({QStringLiteral("cli"), QStringLiteral("Run the suite in the terminal and print a table.")});
+    p.addOption({QStringLiteral("smart"), QStringLiteral("Print the drive's SMART health report and exit.")});
     p.addOption({QStringLiteral("dir"), QStringLiteral("Directory to test (default: home)."), QStringLiteral("path")});
     p.addOption({QStringLiteral("size"), QStringLiteral("Test file size in GiB (default 4)."), QStringLiteral("GiB")});
     p.addOption({QStringLiteral("runtime"), QStringLiteral("Seconds per test (default 15)."), QStringLiteral("s")});
     p.process(app);
 
+    if (p.isSet(QStringLiteral("smart"))) {
+        SmartInfo si;
+        if (p.isSet(QStringLiteral("dir"))) si.setTargetDir(p.value(QStringLiteral("dir")));
+        si.refresh();
+        QTextStream(stdout) << si.textReport();
+        return si.error().isEmpty() ? 0 : 1;
+    }
     FioRunner r;
     if (p.isSet(QStringLiteral("dir"))) r.setTargetDir(p.value(QStringLiteral("dir")));
     if (p.isSet(QStringLiteral("size"))) r.setSizeGiB(p.value(QStringLiteral("size")).toInt());
@@ -53,7 +62,7 @@ static int runCli(int argc, char **argv)
 int main(int argc, char **argv)
 {
     for (int i = 1; i < argc; ++i)
-        if (qstrcmp(argv[i], "--cli") == 0 || qstrcmp(argv[i], "--help") == 0 || qstrcmp(argv[i], "-h") == 0)
+        if (qstrcmp(argv[i], "--cli") == 0 || qstrcmp(argv[i], "--smart") == 0 || qstrcmp(argv[i], "--help") == 0 || qstrcmp(argv[i], "-h") == 0)
             return runCli(argc, argv);
 
     if (!qEnvironmentVariableIsSet("QT_LOGGING_RULES"))

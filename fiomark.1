@@ -1,4 +1,4 @@
-.TH FIOMARK 1 "September 2026" "fiomark 0.1.0" "User Commands"
+.TH FIOMARK 1 "September 2026" "fiomark 0.2.0" "User Commands"
 .SH NAME
 fiomark \- CrystalDiskMark-style storage benchmark driven by fio
 .SH SYNOPSIS
@@ -22,6 +22,12 @@ the same suite runs in the terminal and prints a table; no display is required.
 .PP
 The test file is removed when the run finishes, is stopped, or fails. fiomark refuses to start
 without write permission or enough free space, and warns when the target is ZFS or tmpfs.
+.PP
+The
+.B Health
+tab shows the drive's identity and SMART attributes (NVMe and ATA), read through udisks2 over
+D-Bus so no privileges are needed, with an overall Good/Caution/Bad rating and a Refresh button
+that asks the drive for fresh data.
 .SH OPTIONS
 .TP
 .BI \-\-dir " PATH"
@@ -35,6 +41,12 @@ Duration of each of the six tests. Default: 15.
 .TP
 .B \-\-start
 Begin the run as soon as the window opens (ignored with \fB\-\-cli\fR, which always starts).
+.TP
+.B \-\-smart
+Print the drive's SMART health report for \fB\-\-dir\fR (default: home) and exit; status 1 if it could not be read.
+.TP
+.B \-\-health
+Open the window on the Health tab.
 .TP
 .B \-\-cli
 Run in the terminal and print a results table.

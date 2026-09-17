@@ -5,6 +5,8 @@ A CrystalDiskMark-style storage benchmark for Linux: a small Qt 6 / QML front en
 
 ![fiomark after a run on a Samsung PM981](docs/screenshot.png)
 
+![Health tab: SMART data via udisks2](docs/health.png)
+
 fio is the standard tool for measuring storage, but its output is long and its options are easy
 to get subtly wrong (forget `--direct=1` and you benchmark your RAM). fiomark runs one fixed,
 well-understood suite with safe defaults and shows the six numbers that matter.
@@ -23,7 +25,14 @@ well-understood suite with safe defaults and shows the six numbers that matter.
   is closed mid-run.
 - **Follows your desktop**: uses Qt Quick Controls' Fusion style with the system palette, so it
   picks up light/dark themes (for example through `qt6ct`) and has no colours of its own.
-- **Headless mode**: `--cli` runs the same suite and prints a table; no display needed.
+- **Health tab**: drive identity (model, serial, firmware, size, bus) and the full SMART
+  attribute set, for NVMe (critical warnings, temperature against the drive's own thresholds,
+  percentage used, spare, data written/read, power-on time, cycles, unsafe shutdowns, media
+  errors, error log, self-test) and ATA (self-assessment, temperature, bad sectors, the raw
+  attribute table). Read through **udisks2 over D-Bus**, so it needs no root and no prompt.
+  A Refresh button asks the drive for fresh data. Overall rating: Good, Caution or Bad.
+- **Headless modes**: `--cli` runs the suite and prints a table; `--smart` prints the health
+  report. No display needed for either.
 
 ## The suite
 
@@ -52,7 +61,8 @@ PCIe 4.0 x4 ≈ 7,000 MB/s, PCIe 5.0 x4 ≈ 12,000+ MB/s.
 - Linux with a kernel that allows `io_uring` (5.1+; some hardened or containerised
   environments disable it, in which case fio fails to start a job and fiomark reports the error)
 - `fio` 3.x on `PATH`
-- Qt 6.5 or newer: Core, Gui, Qml, Quick, QuickControls2, plus the QML modules for Controls,
+- udisks2 running (for the Health tab; the benchmark works without it)
+- Qt 6.5 or newer: Core, Gui, DBus, Qml, Quick, QuickControls2, plus the QML modules for Controls,
   Layouts, Dialogs, Templates and Window
 - CMake 3.21+, a C++20 compiler, and optionally Ninja
 - `lsblk` (util-linux) for the device model line
@@ -71,8 +81,8 @@ sudo apt install fio cmake ninja-build g++ qt6-base-dev qt6-declarative-dev \
 Debian 13 (trixie), amd64:
 
 ```sh
-curl -fsSLO https://github.com/0x64616e6e/fiomark/releases/download/v0.1.0/fiomark_0.1.0-1_amd64.deb
-sudo apt install ./fiomark_0.1.0-1_amd64.deb
+curl -fsSLO https://github.com/0x64616e6e/fiomark/releases/download/v0.2.0/fiomark_0.2.0-1_amd64.deb
+sudo apt install ./fiomark_0.2.0-1_amd64.deb
 ```
 
 Newer versions, if any, are on the [releases page](https://github.com/0x64616e6e/fiomark/releases).
@@ -131,6 +141,7 @@ fiomark --dir /mnt/scratch --size 8 --runtime 30 --start
 | `--size GiB` | test file size | 4 |
 | `--runtime S` | seconds per test (six tests per run) | 15 |
 | `--start` | start the run as soon as the window opens | off |
+| `--health` | open on the Health tab | off |
 
 ### Terminal
 
@@ -150,6 +161,20 @@ RND4K Q1 T1           58.2       126.5       14213       30885
 ```
 
 Exit status is 0 on success and 1 if the run failed or could not start.
+
+```sh
+fiomark --smart [--dir PATH]
+```
+
+```
+SAMSUNG MZVLB2T0HALB-000H1  S4J0NXXXXXXXXX  fw HPS0NEXG  2.05 TB  NVMe 1.3  [/dev/nvme0n1]
+Health: Good  —  All indicators within normal limits.  (SMART data as of 03:38:57)
+
+   Critical warning                    none
+   Temperature                         50 °C  (warn 81 °C, crit 82 °C)
+   Percentage used                     0 %  of rated endurance
+   ...
+```
 
 ## Getting meaningful numbers
 
@@ -181,6 +206,10 @@ Main.qml ──(properties, start/stop)──► FioRunner (C++, QObject, QML_EL
                                        JSON ──► QJsonDocument ──► results (QVariantList) ──► QML grid
 ```
 
+- `smartinfo.{h,cpp}`: resolves the directory to its physical disk (`lsblk`), finds the drive
+  object in udisks2 (`org.freedesktop.UDisks2.Block` → `Drive`), calls `SmartUpdate` and reads
+  `org.freedesktop.UDisks2.NVMe.Controller` or `Drive.Ata`, and rates the result. udisks2 does
+  the privileged part; polkit allows it for active local sessions by default.
 - `fiorunner.{h,cpp}`: builds the job queue (one layout pass, then read/write per row), runs fio
   asynchronously through `QProcess`, parses `jobs[0].read|write.{bw_bytes, iops, clat_ns.mean}`
   from the JSON, and exposes `results`, `progress`, `currentTest`, `deviceInfo`, `warning`,
@@ -198,6 +227,7 @@ Main.qml ──(properties, start/stop)──► FioRunner (C++, QObject, QML_EL
 CMakeLists.txt      build, QML module (URI FioMark), install rules
 main.cpp            entry point: GUI or --cli
 fiorunner.h/.cpp    fio orchestration and JSON parsing
+smartinfo.h/.cpp    SMART health via udisks2 (D-Bus)
 Main.qml            user interface
 fiomark.desktop     desktop entry
 fiomark.1           man page
@@ -217,6 +247,8 @@ fiomark with fiomark.
 - The I/O engine is fixed to `io_uring`; there is no fallback to `libaio` yet.
 - The suite is fixed; no custom profiles, mixed read/write, or sustained-write test.
 - No history, export, or side-by-side comparison of runs.
+- Drives behind USB bridges usually hide SMART from udisks2; there is no smartctl fallback yet.
+- No SMART self-test start/abort yet (udisks2 offers it).
 - Progress is estimated from time rather than read from fio's status output.
 - Raw block devices are not supported on purpose: fiomark only ever writes a file it created.
 

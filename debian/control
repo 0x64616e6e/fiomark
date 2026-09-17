@@ -16,6 +16,7 @@ Rules-Requires-Root: no
 Package: fiomark
 Architecture: any
 Depends: ${shlibs:Depends},
+         udisks2,
          ${misc:Depends},
          fio,
          qml6-module-qtcore,
