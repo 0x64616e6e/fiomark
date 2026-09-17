@@ -1,0 +1,9 @@
+[Desktop Entry]
+Type=Application
+Name=fiomark
+GenericName=Disk Benchmark
+Comment=CrystalDiskMark-style storage benchmark driven by fio
+Exec=fiomark
+Icon=drive-harddisk
+Terminal=false
+Categories=System;Utility;
