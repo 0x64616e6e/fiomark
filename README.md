@@ -66,6 +66,18 @@ sudo apt install fio cmake ninja-build g++ qt6-base-dev qt6-declarative-dev \
     qml6-module-qtqml-workerscript qml6-module-qtcore
 ```
 
+## Install from a release
+
+Debian 13 (trixie), amd64:
+
+```sh
+gh release download --repo 0x64616e6e/fiomark --pattern 'fiomark_*_amd64.deb'
+sudo apt install ./fiomark_*_amd64.deb
+```
+
+Each release lists SHA-256 checksums for its packages. The packages need Qt 6.8 or newer at
+runtime; elsewhere, build from source.
+
 ## Build and install
 
 ```sh
