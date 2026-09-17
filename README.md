@@ -77,6 +77,23 @@ cmake --install build      # ~/.local/bin/fiomark and a desktop entry
 Use `-DCMAKE_INSTALL_PREFIX=/usr/local` with `sudo cmake --install build` for a system-wide
 install. To run without installing: `./build/fiomark`.
 
+### Debian package
+
+The repository carries `debian/` packaging (debhelper 13, CMake + Ninja, hardening enabled).
+Library dependencies are computed by `dh_shlibdeps`; `fio` and the QML runtime modules are
+declared explicitly.
+
+```sh
+sudo apt install debhelper dpkg-dev fakeroot lintian       # once
+dpkg-buildpackage -us -uc -b                                # writes ../fiomark_<version>_amd64.deb
+lintian ../fiomark_*.changes
+sudo apt install ../fiomark_*_amd64.deb                     # pulls in fio and the Qt runtime
+```
+
+The build runs two smoke tests (`ctest`): `--help` output, and refusal of a non-existent
+directory. Neither needs a display or touches a disk. A `-dbgsym` package with debug symbols is
+produced alongside. Remove with `sudo apt remove fiomark`.
+
 ## Usage
 
 ### Window
@@ -169,6 +186,8 @@ main.cpp            entry point: GUI or --cli
 fiorunner.h/.cpp    fio orchestration and JSON parsing
 Main.qml            user interface
 fiomark.desktop     desktop entry
+fiomark.1           man page
+debian/             Debian packaging
 docs/screenshot.png
 ```
 

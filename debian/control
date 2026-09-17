@@ -1,0 +1,40 @@
+Source: fiomark
+Section: utils
+Priority: optional
+Maintainer: 0x64616e6e <daniel@este.systems>
+Build-Depends: debhelper-compat (= 13),
+               cmake (>= 3.21),
+               ninja-build,
+               qt6-base-dev (>= 6.5),
+               qt6-declarative-dev (>= 6.5)
+Standards-Version: 4.7.2
+Homepage: https://github.com/0x64616e6e/fiomark
+Vcs-Git: https://github.com/0x64616e6e/fiomark.git
+Vcs-Browser: https://github.com/0x64616e6e/fiomark
+Rules-Requires-Root: no
+
+Package: fiomark
+Architecture: any
+Depends: ${shlibs:Depends},
+         ${misc:Depends},
+         fio,
+         qml6-module-qtcore,
+         qml6-module-qtqml-workerscript,
+         qml6-module-qtquick,
+         qml6-module-qtquick-controls,
+         qml6-module-qtquick-dialogs,
+         qml6-module-qtquick-layouts,
+         qml6-module-qtquick-templates,
+         qml6-module-qtquick-window
+Recommends: nvme-cli
+Description: CrystalDiskMark-style storage benchmark driven by fio
+ fiomark runs a fixed, well-understood fio suite against a test file and shows
+ the six numbers that matter: sequential 1 MiB transfers at queue depth 8,
+ random 4 KiB transfers at queue depth 32 with four jobs, and random 4 KiB
+ transfers at queue depth 1, each for reads and writes, as MB/s with IOPS and
+ mean latency.
+ .
+ Jobs use direct I/O and io_uring, so the page cache is bypassed. The tool
+ resolves the chosen directory to its physical device, checks free space,
+ warns about ZFS and tmpfs targets, and removes its test file afterwards. A
+ --cli mode prints the same results as a table without needing a display.

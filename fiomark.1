@@ -1,0 +1,52 @@
+.TH FIOMARK 1 "September 2026" "fiomark 0.1.0" "User Commands"
+.SH NAME
+fiomark \- CrystalDiskMark-style storage benchmark driven by fio
+.SH SYNOPSIS
+.B fiomark
+[\fB\-\-dir\fR \fIPATH\fR] [\fB\-\-size\fR \fIGiB\fR] [\fB\-\-runtime\fR \fISECONDS\fR] [\fB\-\-start\fR]
+.br
+.B fiomark \-\-cli
+[\fB\-\-dir\fR \fIPATH\fR] [\fB\-\-size\fR \fIGiB\fR] [\fB\-\-runtime\fR \fISECONDS\fR]
+.SH DESCRIPTION
+.B fiomark
+measures a filesystem's storage performance by running a fixed suite of
+.BR fio (1)
+jobs against a test file it creates in the chosen directory: sequential 1 MiB transfers at
+queue depth 8, random 4 KiB transfers at queue depth 32 with four jobs, and random 4 KiB
+transfers at queue depth 1, each as a read pass and a write pass. All jobs use direct I/O and the
+io_uring engine. Results are shown as MB/s with IOPS and mean completion latency.
+.PP
+Without options a window opens. With
+.B \-\-cli
+the same suite runs in the terminal and prints a table; no display is required.
+.PP
+The test file is removed when the run finishes, is stopped, or fails. fiomark refuses to start
+without write permission or enough free space, and warns when the target is ZFS or tmpfs.
+.SH OPTIONS
+.TP
+.BI \-\-dir " PATH"
+Directory in which to create the test file. Default: the home directory.
+.TP
+.BI \-\-size " GiB"
+Size of the test file. Default: 4.
+.TP
+.BI \-\-runtime " SECONDS"
+Duration of each of the six tests. Default: 15.
+.TP
+.B \-\-start
+Begin the run as soon as the window opens (ignored with \fB\-\-cli\fR, which always starts).
+.TP
+.B \-\-cli
+Run in the terminal and print a results table.
+.TP
+.BR \-h ", " \-\-help
+Show usage for the terminal mode.
+.SH EXIT STATUS
+In terminal mode, 0 on success and 1 if the run failed or could not start.
+.SH NOTES
+Write passes add some tens of gigabytes of wear per run on fast drives. On laptops, run on mains
+power. Results on copy-on-write or caching filesystems include the filesystem's own behaviour.
+.SH SEE ALSO
+.BR fio (1),
+.BR lsblk (8),
+.BR nvme (1)
